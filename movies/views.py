@@ -1,5 +1,5 @@
 from movies.models import Movie
-from rest_framework import status
+from rest_framework import serializers, status
 from rest_framework.response import Response
 from rest_framework.exceptions import APIException, NotFound, ValidationError
 from rest_framework.decorators import api_view
@@ -9,13 +9,12 @@ from .serializers import MovieRequestSerializer, MovieResponseSerializer
 
 
 @api_view(['GET', 'POST'])
-def create_movie(request):
+def movies_list(request):
     '''
     Add a new movie to the database from the JSON POST request
     '''
     try:
         if request.method == 'GET':
-            Movie.objects.all().values()
             paginator = PageNumberPagination()
             paginator.page_size = 20
             movie_objects = Movie.objects.all().order_by('dor')
@@ -28,16 +27,13 @@ def create_movie(request):
             serializer = MovieRequestSerializer(data=unsafe_request)
             if serializer.is_valid(raise_exception=True):
                 saved_movie = serializer.save()
-                response_dict = {
-                    'id': saved_movie.id.hex,
-                }
-                response_dict.update(serializer.data)
-                return Response(response_dict, status=status.HTTP_201_CREATED)
+                responseserializer = MovieResponseSerializer(saved_movie)
+                return Response(responseserializer.data, status=status.HTTP_201_CREATED)
 
     except ValueError or TypeError as e:
         raise APIException(str(e), status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-@api_view(['PUT'])
+@api_view(['GET', 'PUT'])
 def movie_details(request, format=None, *args, **kwargs):
     movie_id = kwargs['id']
     try:
@@ -52,11 +48,12 @@ def movie_details(request, format=None, *args, **kwargs):
             serializer = MovieRequestSerializer(data=unsafe_request)
             if serializer.is_valid(raise_exception=True):
                 updated_movie = serializer.update(movie_instance, serializer.validated_data)
-                response_dict = {
-                    'id': updated_movie.id.hex,
-                }
-                response_dict.update(serializer.data)
-                return Response(response_dict, status=status.HTTP_200_OK)
+                responseserializer = MovieResponseSerializer(updated_movie)
+                return Response(responseserializer.data, status=status.HTTP_200_OK)
                 
         except ValueError or TypeError as e:
             raise APIException(str(e), status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    if request.method == 'GET':
+        serializer = MovieResponseSerializer(movie_instance)
+        return Response(serializer.data)

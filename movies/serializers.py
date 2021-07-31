@@ -14,7 +14,7 @@ class MovieResponseSerializer(serializers.ModelSerializer):
             "id": instance.id.hex,
             "name": instance.name,
             "desc": instance.desc,
-            "dor": instance.dor,
+            "dor": instance.dor.strftime("%Y-%m-%d"),
         }
 
 
