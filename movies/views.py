@@ -5,7 +5,7 @@ from rest_framework.exceptions import APIException, NotFound, ValidationError
 from rest_framework.decorators import api_view
 from rest_framework.pagination import PageNumberPagination
 
-from .serializers import MovieSerializer
+from .serializers import MovieRequestSerializer, MovieResponseSerializer
 
 
 @api_view(['GET', 'POST'])
@@ -18,14 +18,14 @@ def create_movie(request):
             Movie.objects.all().values()
             paginator = PageNumberPagination()
             paginator.page_size = 20
-            movie_objects = Movie.objects.all()
+            movie_objects = Movie.objects.all().order_by('dor')
             result_page = paginator.paginate_queryset(movie_objects, request)
-            serializer = MovieSerializer(result_page, many=True)
+            serializer = MovieResponseSerializer(result_page, many=True)
             return paginator.get_paginated_response(serializer.data)
             
         if request.method == 'POST':
             unsafe_request = request.data
-            serializer = MovieSerializer(data=unsafe_request)
+            serializer = MovieRequestSerializer(data=unsafe_request)
             if serializer.is_valid(raise_exception=True):
                 saved_movie = serializer.save()
                 response_dict = {
@@ -49,7 +49,7 @@ def movie_details(request, format=None, *args, **kwargs):
         try:
             unsafe_request = request.data
             unsafe_request.update({'id': kwargs['id']})
-            serializer = MovieSerializer(data=unsafe_request)
+            serializer = MovieRequestSerializer(data=unsafe_request)
             if serializer.is_valid(raise_exception=True):
                 updated_movie = serializer.update(movie_instance, serializer.validated_data)
                 response_dict = {

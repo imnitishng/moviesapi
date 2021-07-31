@@ -3,13 +3,22 @@ from .models import Movie
 from rest_framework import serializers
 
 
-class MovieJSONSerializer(serializers.Serializer):
-    name = serializers.CharField()
-    desc = serializers.CharField()
-    dor = serializers.DateField(format="%d-%m-%Y")
-    
+class MovieResponseSerializer(serializers.ModelSerializer):
 
-class MovieSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Movie
+        fields = '__all__'
+
+    def to_representation(self, instance):
+        return {
+            "id": instance.id.hex,
+            "name": instance.name,
+            "desc": instance.desc,
+            "dor": instance.dor,
+        }
+
+
+class MovieRequestSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Movie
