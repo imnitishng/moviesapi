@@ -33,7 +33,7 @@ def movies_list(request):
     except ValueError or TypeError as e:
         raise APIException(str(e), status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-@api_view(['GET', 'PUT'])
+@api_view(['GET', 'PUT', 'DELETE'])
 def movie_details(request, format=None, *args, **kwargs):
     movie_id = kwargs['id']
     try:
@@ -56,4 +56,10 @@ def movie_details(request, format=None, *args, **kwargs):
 
     if request.method == 'GET':
         serializer = MovieResponseSerializer(movie_instance)
-        return Response(serializer.data)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    if request.method == 'DELETE':
+        serializer = MovieResponseSerializer(movie_instance)
+        movie_to_delete = serializer.data
+        movie_instance.delete()
+        return Response(movie_to_delete, status=status.HTTP_200_OK)
