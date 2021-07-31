@@ -1,9 +1,10 @@
-from django.contrib import admin
 from django.urls import path
+from rest_framework.urlpatterns import format_suffix_patterns
 
-from .views import create_movie
+from .views import create_movie, movie_details
 
 
 url_patterns = [
-    path(r'api/movies/add', create_movie, name='add_movie')
+    path(r'api/movies', create_movie, name='movies_list'),
+    path(r'api/movies/<str:id>', movie_details, name='movie_details'),
 ]
