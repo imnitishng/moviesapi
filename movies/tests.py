@@ -1,3 +1,4 @@
+from movies.models import Movie
 from django.test import TestCase
 from rest_framework.test import APIClient
 
@@ -106,6 +107,7 @@ class TestMoviesGET(TestCase):
         Save bulk movie entries before running the tests to GET info
         '''
         create_bulk_test_movies()
+        cls.movie_id = Movie.objects.all()[0].id.hex
 
     def test_get_all_movies(self):
         '''
@@ -151,4 +153,33 @@ class TestMoviesGET(TestCase):
         self.assertEqual(len(response.data['results']), 10)
         self.assertIsNotNone(response.data['previous'])
         self.assertIsNone(response.data['next'])
+
+
+    def test_get_movie_from_valid_id(self):
+        '''
+        Test getting a movie from ID passed in the URL returns a single movie instance
+        '''
+        client = APIClient()
+        url = f'/api/movies/{self.movie_id}'
+        response = client.get(url)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data['id'], self.movie_id)
+        self.assertIn('name', response.data)
+        self.assertIn('desc', response.data)
+        self.assertIn('dor', response.data)
+        self.assertNotIn('next', response.data)
+        self.assertNotIn('previous', response.data)
+
+
+    def test_get_movie_from_invalid_id(self):
+        '''
+        Test getting a movie from invalid ID passed in the URL returns 404 not found
+        '''
+        client = APIClient()
+        url = f'/api/movies/invalid_movie_id'
+        response = client.get(url)
+
+        self.assertEqual(response.status_code, 404)
+        self.assertContains(response, 'Movie ID not found', status_code=404)
 
