@@ -65,7 +65,6 @@ class TestMoviesPUT(TestCase):
         and data specified as JSON request data to the endpoint.
         '''
         client = APIClient()
-
         payload = {
             "name": "test movie nitish",
             "desc": "test movie description nitish",
@@ -87,7 +86,6 @@ class TestMoviesPUT(TestCase):
         URL paramaeter
         '''
         client = APIClient()
-
         payload = {
             "name": "test movie nitish",
             "desc": "test movie description nitish",
@@ -105,8 +103,52 @@ class TestMoviesGET(TestCase):
     @classmethod
     def setUpTestData(cls):
         '''
-        Save a movie entry before running the tests to edit it 
-        inside the tests using API requests
+        Save bulk movie entries before running the tests to GET info
         '''
         create_bulk_test_movies()
+
+    def test_get_all_movies(self):
+        '''
+        Test getting all movies first page, the URL for previous page should be
+        absent and URL for the next page should be present.
+        '''
+        client = APIClient()
+        url = f'/api/movies'
+        response = client.get(url)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data['count'], 50)
+        self.assertEqual(len(response.data['results']), 20)
+        self.assertIsNone(response.data['previous'])
+        self.assertIsNotNone(response.data['next'])
+
+    def test_get_movies_paginated_content(self):
+        '''
+        Test getting all movies paginated content for page 2 where previous and
+        next pages should be present
+        '''
+        client = APIClient()
+        url = f'/api/movies?page=2'
+        response = client.get(url)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data['count'], 50)
+        self.assertEqual(len(response.data['results']), 20)
+        self.assertIsNotNone(response.data['previous'])
+        self.assertIsNotNone(response.data['next'])
+
+    def test_get_movies_paginated_content_final_page(self):
+        '''
+        Test getting all movies paginated content for last page where previous only
+        previous content is present
+        '''
+        client = APIClient()
+        url = f'/api/movies?page=3'
+        response = client.get(url)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data['count'], 50)
+        self.assertEqual(len(response.data['results']), 10)
+        self.assertIsNotNone(response.data['previous'])
+        self.assertIsNone(response.data['next'])
 
