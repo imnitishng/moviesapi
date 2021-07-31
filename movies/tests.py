@@ -1,5 +1,5 @@
 from movies.models import Movie
-from django.test import TestCase
+from django.test import TestCase, client
 from rest_framework.test import APIClient
 
 from .test_utils import create_test_movie, create_bulk_test_movies
@@ -30,7 +30,6 @@ class TestMoviesPOST(TestCase):
         self.assertEqual(response.data['desc'], 'test movie description')
         self.assertEqual(response.data['dor'], '1999-01-01')
 
-
     def test_create_movie_incomplete_request(self):
         '''
         Test 400 BAD_REQUEST with error details is raised when incomplete data 
@@ -46,6 +45,18 @@ class TestMoviesPOST(TestCase):
         self.assertEqual(response.status_code, 400)
         self.assertContains(response, 'This field is required.', status_code=400)
         self.assertIn('name', response.data)
+
+    def test_create_movie_with_invalid_date_format(self):
+        client = APIClient()
+        payload = {
+            "name": "test movie",
+            "desc": "test movie description",
+            "dor": "01-01-1999"
+        }
+        response = client.post(self.url, payload, format='json')
+
+        self.assertEqual(response.status_code, 400)
+        self.assertContains(response, 'Date has wrong format. Use one of these formats instead: YYYY-MM-DD.', status_code=400)
 
 
 class TestMoviesPUT(TestCase):
@@ -101,6 +112,9 @@ class TestMoviesPUT(TestCase):
 
 
 class TestMoviesGET(TestCase):
+    '''
+    Test GET operations for movies
+    '''
     @classmethod
     def setUpTestData(cls):
         '''
@@ -183,3 +197,42 @@ class TestMoviesGET(TestCase):
         self.assertEqual(response.status_code, 404)
         self.assertContains(response, 'Movie ID not found', status_code=404)
 
+
+class TestMoviesDELETE(TestCase):
+    '''
+    Test DELETE operations for movies    
+    '''
+    @classmethod
+    def setUpTestData(cls):
+        '''
+        Save a movie entry before running the tests to delete it 
+        inside the tests using API requests
+        '''
+        cls.movie_id = create_test_movie()
+
+    def test_delete_movie_valid_id(self):
+        '''
+        Test delete a movie information for the ID specified as URL param
+        and return deleted data as JSON
+        '''
+        client = APIClient()
+        url = f'/api/movies/{self.movie_id}'
+        response = client.delete(url)
+
+        self.assertEqual(len(Movie.objects.all()), 0)
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(response.data['id'], self.movie_id)
+        self.assertEqual(response.data['name'], 'test_movie')
+        self.assertEqual(response.data['desc'], 'tests movie desc')
+        self.assertEqual(response.data['dor'], '1231-03-01')
+
+    def test_delete_movie_with_invalid_id(self):
+        '''
+        Test 404 raised when trying to delete movie with invalid ID
+        '''
+        client = APIClient()
+        url = f'/api/movies/invalid_request_id'
+        response = client.put(url)
+
+        self.assertEqual(response.status_code, 404)
+        self.assertContains(response, 'Movie ID not found', status_code=404)
